@@ -189,6 +189,7 @@ def _ensure_bridge_ready(bridge_url: str) -> None:
     from pathlib import Path
 
     from xhs.bridge import BridgePage
+    from xhs.errors import CDPError
 
     page = BridgePage(bridge_url)
 
@@ -219,8 +220,7 @@ def _ensure_bridge_ready(bridge_url: str) -> None:
                 logger.info("Bridge server 已启动")
                 break
         else:
-            logger.warning("Bridge server 启动超时，请手动运行 bridge_server.py")
-            return
+            raise CDPError("小红书本地连接服务启动失败，任务尚未执行，请稍后重试。")
 
     # ── 2. 检查扩展是否连接 ──────────────────────────────────────────
     if page.is_extension_connected():
@@ -229,21 +229,34 @@ def _ensure_bridge_ready(bridge_url: str) -> None:
     # 已打开的 Chrome 不需要被唤到前台。先给 Manifest V3 service worker
     # 一小段时间自行恢复 WebSocket，避免每条命令都抢走用户焦点。
     logger.info("等待浏览器扩展自动重连...")
-    for _ in range(6):
-        time.sleep(1)
+    deadline = time.monotonic() + 6
+    while time.monotonic() < deadline:
         if page.is_extension_connected():
             logger.info("浏览器扩展已自动重连")
             return
+        time.sleep(1)
 
     logger.info("浏览器扩展仍未连接，正在后台启动 Chrome...")
     _open_chrome()
 
-    for _ in range(20):
-        time.sleep(1)
+    # 预留至少一个 Chrome alarm 周期，覆盖电脑重启或长时间闲置后的后台唤醒。
+    deadline = time.monotonic() + 35
+    while time.monotonic() < deadline:
         if page.is_extension_connected():
             logger.info("浏览器扩展已连接")
             return
-    logger.warning("等待扩展连接超时，请确认 Chrome 已安装 XHS Bridge 扩展并已启用")
+        time.sleep(1)
+    server_status = page.get_server_status()
+    extension_info = server_status.get("extension") or {}
+    if server_status.get("extension_connected") and not extension_info.get("protocol_version"):
+        raise CDPError(
+            "Chrome 当前仍在运行旧版 XHS Bridge。请在扩展管理页完成一次版本更新，"
+            "之后的新任务会自动恢复连接。"
+        )
+    raise CDPError(
+        "小红书连接未恢复。请确认 Chrome 已打开且 XHS Bridge 扩展已启用；"
+        "任务尚未执行，可以在扩展中点击“重新连接”后重试。"
+    )
 
 
 def _open_chrome() -> bool:

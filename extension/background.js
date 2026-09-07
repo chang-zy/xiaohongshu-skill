@@ -13,13 +13,28 @@ importScripts("netlogger.js");
 netlogInit().catch(e => console.warn("[XHS NetLogger] init failed", e));
 
 const BRIDGE_URL = "ws://localhost:9333";
+const KEEP_ALIVE_ALARM = "bridgeReconnect";
+const KEEP_ALIVE_INTERVAL_MS = 20_000;
 let ws = null;
 let reconnectTimer = null;
+let keepAliveTimer = null;
 
-// 保持 service worker 存活：有开放的 WebSocket 连接时 Chrome 不会终止 SW
-// 额外加 alarm 作为保底
-chrome.alarms.create("keepAlive", { periodInMinutes: 0.4 });
-chrome.alarms.onAlarm.addListener(() => {
+// Alarm 负责在后台被 Chrome 回收后重新唤醒连接；WebSocket 消息负责连接期间保活。
+async function ensureReconnectAlarm() {
+  const alarm = await chrome.alarms.get(KEEP_ALIVE_ALARM);
+  if (!alarm) {
+    await chrome.alarms.create(KEEP_ALIVE_ALARM, { periodInMinutes: 0.5 });
+  }
+}
+
+ensureReconnectAlarm().catch(() => {});
+chrome.runtime.onInstalled.addListener(() => ensureReconnectAlarm().catch(() => {}));
+chrome.runtime.onStartup.addListener(() => {
+  ensureReconnectAlarm().catch(() => {});
+  connect();
+});
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name !== KEEP_ALIVE_ALARM) return;
   if (!ws || ws.readyState !== WebSocket.OPEN) connect();
 });
 
@@ -36,10 +51,17 @@ function broadcastStatus() {
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === "GET_STATUS") {
+    if (!ws || ws.readyState !== WebSocket.OPEN) connect();
     sendResponse({
       success: true,
       status: { wsConnected: ws !== null && ws.readyState === WebSocket.OPEN },
     });
+    return true;
+  }
+
+  if (msg.type === "RECONNECT") {
+    reconnectNow();
+    sendResponse({ success: true });
     return true;
   }
 
@@ -98,7 +120,14 @@ function connect() {
   socket.onopen = () => {
     if (ws !== socket) return;
     console.log("[XHS Bridge] 已连接到 bridge server");
-    socket.send(JSON.stringify({ role: "extension" }));
+    socket.send(JSON.stringify({
+      role: "extension",
+      version: chrome.runtime.getManifest().version,
+      protocol_version: 1,
+      extension_id: chrome.runtime.id,
+      connected_at: new Date().toISOString(),
+    }));
+    startKeepAlive(socket);
     setStatus(true);
     broadcastStatus();
   };
@@ -122,6 +151,7 @@ function connect() {
     if (ws !== socket) return;
     console.log("[XHS Bridge] 连接断开，3s 后重连...");
     ws = null;
+    stopKeepAlive();
     setStatus(false);
     broadcastStatus();
     scheduleReconnect();
@@ -133,6 +163,35 @@ function connect() {
     // 自动重连逻辑运行，不再依赖用户手动刷新扩展。
     try { socket.close(); } catch (_) {}
   };
+}
+
+function startKeepAlive(socket) {
+  stopKeepAlive();
+  keepAliveTimer = setInterval(() => {
+    if (ws !== socket || socket.readyState !== WebSocket.OPEN) return;
+    socket.send(JSON.stringify({
+      role: "extension",
+      type: "heartbeat",
+      sent_at: new Date().toISOString(),
+    }));
+  }, KEEP_ALIVE_INTERVAL_MS);
+}
+
+function stopKeepAlive() {
+  if (keepAliveTimer !== null) clearInterval(keepAliveTimer);
+  keepAliveTimer = null;
+}
+
+function reconnectNow() {
+  if (reconnectTimer !== null) clearTimeout(reconnectTimer);
+  reconnectTimer = null;
+  const current = ws;
+  ws = null;
+  stopKeepAlive();
+  if (current) {
+    try { current.close(); } catch (_) {}
+  }
+  connect();
 }
 
 function scheduleReconnect() {
@@ -149,6 +208,14 @@ async function handleCommand(msg) {
   const { method, params = {} } = msg;
 
   switch (method) {
+    case "ping_extension":
+      return {
+        ready: true,
+        version: chrome.runtime.getManifest().version,
+        protocol_version: 1,
+        extension_id: chrome.runtime.id,
+      };
+
     // ── 导航 ──
     case "navigate":
       return await cmdNavigate(params);

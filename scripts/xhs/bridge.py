@@ -29,7 +29,7 @@ class BridgePage:
 
     # ─── 内部通信 ───────────────────────────────────────────────
 
-    def _call(self, method: str, params: dict | None = None) -> Any:
+    def _call(self, method: str, params: dict | None = None, timeout: float = 90) -> Any:
         """向 bridge server 发送一条命令并等待结果。"""
         msg: dict[str, Any] = {"role": "cli", "method": method}
         if params:
@@ -37,12 +37,12 @@ class BridgePage:
         try:
             with ws_client.connect(self._bridge_url, max_size=50 * 1024 * 1024) as ws:
                 ws.send(json.dumps(msg, ensure_ascii=False))
-                raw = ws.recv(timeout=90)
+                raw = ws.recv(timeout=timeout)
         except OSError as e:
             raise CDPError(f"无法连接到 bridge server（ws://localhost:9333）: {e}") from e
 
         resp = json.loads(raw)
-        if "error" in resp and resp["error"]:
+        if resp.get("error"):
             raise CDPError(f"Bridge 错误: {resp['error']}")
         return resp.get("result")
 
@@ -287,16 +287,28 @@ class BridgePage:
         except Exception:
             return False
 
-    def is_extension_connected(self) -> bool:
-        """检查浏览器扩展是否已连接到 bridge server。"""
+    def get_server_status(self) -> dict[str, Any]:
+        """返回本地服务看到的扩展连接元数据，不代替扩展实时健康检查。"""
         try:
             with ws_client.connect(self._bridge_url, open_timeout=3) as ws:
                 ws.send(json.dumps({"role": "cli", "method": "ping_server"}))
                 raw = ws.recv(timeout=5)
-            resp = json.loads(raw)
-            return bool(resp.get("result", {}).get("extension_connected"))
+            return dict(json.loads(raw).get("result") or {})
+        except Exception:
+            return {}
+
+    def is_extension_connected(self) -> bool:
+        """通过真实请求检查扩展是否已连接且能够响应。"""
+        try:
+            result = self._call("ping_extension", timeout=2) or {}
+            return bool(result.get("ready"))
         except Exception:
             return False
+
+    def get_extension_health(self) -> dict[str, Any]:
+        """返回扩展的实时健康状态与版本，供诊断界面使用。"""
+        result = self._call("ping_extension", timeout=2) or {}
+        return dict(result)
 
     @property
     def target_id(self) -> str:

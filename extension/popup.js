@@ -2,9 +2,26 @@ function renderStatus(wsConnected) {
   set("bridge-status", "bridge-dot", "bridge-text", wsConnected, wsConnected ? "已连接" : "未连接");
   set("ext-status",   "ext-dot",   "ext-text",   true, "运行中");
   document.getElementById("hint").textContent = wsConnected
-    ? "一切正常，可以运行 Python 脚本。"
-    : "请先运行：python scripts/cli.py <命令>";
+    ? "已准备好，可以开始小红书任务。"
+    : "当前处于待命状态。发起任务时会自动连接，也可以立即重新连接。";
+  const reconnectBtn = document.getElementById("reconnect-btn");
+  reconnectBtn.style.display = wsConnected ? "none" : "block";
 }
+
+document.getElementById("reconnect-btn").addEventListener("click", async () => {
+  const btn = document.getElementById("reconnect-btn");
+  btn.disabled = true;
+  btn.textContent = "正在恢复连接…";
+  document.getElementById("hint").textContent = "正在恢复连接，完成后即可继续任务。";
+  await chrome.runtime.sendMessage({ type: "RECONNECT" }).catch(() => {});
+  setTimeout(() => {
+    chrome.runtime.sendMessage({ type: "GET_STATUS" }, (resp) => {
+      renderStatus(Boolean(resp?.success && resp.status.wsConnected));
+      btn.disabled = false;
+      btn.textContent = "重新连接";
+    });
+  }, 1500);
+});
 
 function set(badgeId, dotId, textId, ok, label) {
   const cls = ok ? "ok" : "err";
