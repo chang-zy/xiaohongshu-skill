@@ -1,6 +1,6 @@
-# 小红书研究与运营自动化 Skills（Xiaohongshu / XHS）
+# 小红书 Skill（Xiaohongshu / XHS）
 
-`xhs-research-agent` 是面向 Codex 等 AI Agent 的小红书研究与运营自动化技能集合，支持笔记搜索、评论与子回复采集及完整性核验、账号主页分析、图文与视频理解素材准备、内容发布与互动。项目以中文用户为主要使用人群，提供中文说明和自然语言操作示例，同时保留 Xiaohongshu / XHS 英文名称，方便中英文检索。
+`xiaohongshu-skill` 是面向 Codex 等 AI Agent 的小红书自动化技能集合，支持笔记搜索、评论与子回复采集及完整性核验、账号主页分析、图文与视频理解素材准备、内容发布与互动。项目以中文用户为主要使用人群，提供中文说明和自然语言操作示例，同时保留 Xiaohongshu / XHS 英文名称，方便中英文检索。
 
 > 这是基于 [autoclaw-cc/xiaohongshu-skills](https://github.com/autoclaw-cc/xiaohongshu-skills)
 > 演进的个人下游项目。保留原项目的 MIT 许可与版权声明；本项目与原作者无隶属或维护关系。
@@ -64,7 +64,7 @@ Agent 会自动执行：搜索 → 筛选图文 → 按点赞排序 → 收藏 �
 
 ```bash
 cd <your-agent-project>/skills/
-git clone https://github.com/chang-zy/xhs-research-agent.git xiaohongshu-skills
+git clone https://github.com/chang-zy/xiaohongshu-skill.git xiaohongshu-skills
 ```
 
 2. 安装 Python 依赖：
