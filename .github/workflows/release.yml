@@ -49,9 +49,9 @@ jobs:
           PREFIX="xiaohongshu-skills-${TAG}"
           tar czf "${PREFIX}.tar.gz" \
             --transform "s,^,${PREFIX}/," \
-            skills/ scripts/ SKILL.md pyproject.toml uv.lock LICENSE README.md README_EN.md
+            extension/ skills/ scripts/ SKILL.md pyproject.toml uv.lock LICENSE README.md README_EN.md
           zip -r "${PREFIX}.zip" \
-            skills/ scripts/ SKILL.md pyproject.toml uv.lock LICENSE README.md README_EN.md \
+            extension/ skills/ scripts/ SKILL.md pyproject.toml uv.lock LICENSE README.md README_EN.md \
             -x '*.pyc' '__pycache__/*'
 
       - name: Create GitHub Release

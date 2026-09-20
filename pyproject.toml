@@ -1,6 +1,6 @@
 [project]
 name = "xiaohongshu-skills"
-version = "0.1.0"
+version = "0.1.1"
 description = "RedNote / Xiaohongshu browser automation skills for Codex, Claude Code, OpenClaw, and AI agents"
 readme = { file = "README_EN.md", content-type = "text/markdown" }
 license = { text = "MIT" }
