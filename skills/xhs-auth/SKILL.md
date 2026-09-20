@@ -1,8 +1,9 @@
 ---
 name: xhs-auth
 description: |
-  小红书认证管理技能。检查登录状态、登录（二维码或手机号）、退出登录。
-  当用户要求登录小红书、检查登录状态、退出登录时触发。
+  小红书（RedNote / Xiaohongshu / XHS）认证管理技能。
+  检查登录状态、登录（二维码或手机号）、退出登录。
+  当用户要求登录或退出小红书、RedNote、Xiaohongshu、XHS 时触发。
 version: 2.0.0
 metadata:
   openclaw:

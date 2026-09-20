@@ -1,8 +1,9 @@
 ---
 name: xhs-explore
 description: |
-  小红书内容发现与分析技能。搜索笔记、浏览首页、查看详情、获取用户资料。
-  当用户要求搜索小红书、查看笔记详情、浏览首页、查看用户主页时触发。
+  小红书（RedNote / Xiaohongshu / XHS）内容发现与分析技能。
+  搜索笔记、浏览首页、查看详情、采集评论、获取博主或用户资料。
+  当用户要求搜索小红书、RedNote、Xiaohongshu、XHS，或查看笔记和用户主页时触发。
 metadata:
   openclaw:
     requires:

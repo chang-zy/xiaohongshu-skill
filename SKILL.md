@@ -1,8 +1,10 @@
 ---
 name: xiaohongshu-skills
 description: |
-  小红书自动化技能集合。支持认证登录、内容发布、搜索发现、社交互动、复合运营。
-  当用户要求操作小红书（发布、搜索、评论、登录、分析、点赞、收藏）时触发。
+  小红书（RedNote / Xiaohongshu / XHS / RED / Little Red Book）浏览器自动化技能集合。
+  支持认证登录、内容发布、搜索发现、账号与评论分析、社交互动和复合运营。
+  当用户提到小红书、红书、RedNote、Xiaohongshu、XHS、RED、Little Red Book，
+  或要求发笔记、搜笔记、分析博主、评论、登录、点赞、收藏时触发。
 metadata:
   openclaw:
     requires:
@@ -10,7 +12,7 @@ metadata:
         - python3
         - uv
     emoji: "\U0001F4D5"
-    homepage: https://github.com/xpzouying/xiaohongshu-skills
+    homepage: https://github.com/chang-zy/xiaohongshu-skill
     os:
       - darwin
       - linux

@@ -1,8 +1,9 @@
 ---
 name: xhs-interact
 description: |
-  小红书社交互动技能。发表评论、回复评论、点赞、收藏。
-  当用户要求评论、回复、点赞或收藏小红书帖子时触发。
+  小红书（RedNote / Xiaohongshu / XHS）社交互动技能。
+  支持发表评论、回复评论、点赞和收藏。
+  当用户要求互动小红书、RedNote、Xiaohongshu、XHS 帖子或笔记时触发。
 version: 1.0.0
 metadata:
   openclaw:

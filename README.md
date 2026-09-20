@@ -1,9 +1,14 @@
-# 小红书 Skill（Xiaohongshu / XHS）
+# 小红书 / RedNote Skill（Xiaohongshu / XHS）
 
-`xiaohongshu-skill` 是面向 Codex 等 AI Agent 的小红书自动化技能集合，支持笔记搜索、评论与子回复采集及完整性核验、账号主页分析、图文与视频理解素材准备、内容发布与互动。项目以中文用户为主要使用人群，提供中文说明和自然语言操作示例，同时保留 Xiaohongshu / XHS 英文名称，方便中英文检索。
+[English](README_EN.md) | 简体中文
 
-> 这是基于 [autoclaw-cc/xiaohongshu-skills](https://github.com/autoclaw-cc/xiaohongshu-skills)
-> 演进的个人下游项目。保留原项目的 MIT 许可与版权声明；本项目与原作者无隶属或维护关系。
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![GitHub stars](https://img.shields.io/github/stars/chang-zy/xiaohongshu-skill?style=flat)](https://github.com/chang-zy/xiaohongshu-skill/stargazers)
+
+面向 **Codex、Claude Code、OpenClaw 等 AI Agent** 的小红书（**RedNote / Xiaohongshu / XHS / RED / Little Red Book**）浏览器自动化 Skills。通过本机 Chrome 的真实登录会话完成笔记搜索、可核验评论采集、账号分析、图文与视频理解、内容发布、点赞、收藏和评论。
+
+> 与常见的 Xiaohongshu MCP / RedNote MCP 服务不同，本项目采用 **Agent Skill + Chrome 扩展 + Python CLI** 结构，直接复用你已登录的浏览器，重点解决研究结果的完整性核验和稳定的多步骤工作流。
 
 这个仓库面向需要稳定研究、核验和运营小红书内容的个人工作流。在保留上游登录、搜索、发布和互动能力的基础上，重点补齐了以下能力：
 
@@ -14,11 +19,7 @@
 - **基于当前会话的本地发现**：使用小红书页面自身的同城或附近筛选浏览公开账号，不读取精确地址，也不根据结果推断账号主体身份。
 - **更稳健的浏览器工作流**：增强 Bridge 自动重连、采集失败诊断、任务收尾与 Chrome 清理逻辑；自动化过程尽量不抢占用户正在使用的窗口。
 
-## 上游致谢
-
-感谢原作者和贡献者提供小红书浏览器自动化的基础架构。本仓库在其基础上维护面向个人研究工作流的增强版本。
-
-本项目主要面向 Codex，同时保持标准 `SKILL.md` 结构，便于其他兼容的 AI Agent 接入。它直接复用本机已登录的 Chrome 会话和真实账号，沿普通用户的操作路径完成小红书研究、发布与互动任务。
+本项目主要面向 Codex，同时保持标准 `SKILL.md` 结构，便于 Claude Code、OpenClaw 及其他兼容的 AI Agent 接入。它直接复用本机已登录的 Chrome 会话和真实账号，沿普通用户的操作路径完成小红书研究、发布与互动任务。
 
 > **⚠️ 使用建议**：虽然本项目使用真实的用户浏览器和账号环境，但仍建议**控制使用频率**，避免短时间内大量操作。频繁的自动化行为可能触发小红书的风控机制，导致账号受限。
 
@@ -244,7 +245,16 @@ uv run ruff format .       # 代码格式化
 uv run pytest              # 运行测试
 ```
 
+## 搜索关键词与别名
+
+本项目所指的平台在不同地区和社区中也常被称为：**小红书、Xiaohongshu、XHS、RedNote、RED、Little Red Book、Red Book**。常见项目类型包括 **Xiaohongshu Skill、RedNote Skill、XHS automation、RedNote automation、AI Agent Skill、browser automation**。
+
+> “RedNote” 是目前最常见的英文品牌名；“Little Red Book” 是常见直译。`RedBook` / `Small Red Book` 也有人使用，但容易与其他产品混淆，因此仅作为补充检索词，不作为项目主名称。
+
+## 上游致谢
+
+本项目基于 [autoclaw-cc/xiaohongshu-skills](https://github.com/autoclaw-cc/xiaohongshu-skills) 演进，保留原项目的 MIT 许可与版权声明。感谢原作者和贡献者提供浏览器自动化基础架构。本仓库是面向个人研究工作流的独立下游版本，与原作者无隶属或维护关系。
+
 ## License
 
 MIT
-

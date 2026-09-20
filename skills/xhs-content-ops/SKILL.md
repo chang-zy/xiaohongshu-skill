@@ -1,8 +1,10 @@
 ---
 name: xhs-content-ops
 description: |
-  小红书复合内容运营技能。组合搜索、详情、发布、互动等能力完成运营工作流。
-  当用户要求竞品分析、热点追踪、内容创作、互动管理等复合任务时触发。
+  小红书（RedNote / Xiaohongshu / XHS）复合内容运营技能。
+  组合搜索、详情、账号分析、发布和互动能力完成运营工作流。
+  当用户要求对小红书、RedNote、Xiaohongshu、XHS 做竞品分析、热点追踪、
+  内容创作或互动管理等复合任务时触发。
 version: 1.0.0
 metadata:
   openclaw:
