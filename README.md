@@ -1,4 +1,4 @@
-# 小红书 / RedNote Skill（Xiaohongshu / XHS）
+# 小红书 Skill for Codex
 
 [English](README_EN.md) | 简体中文
 
@@ -6,256 +6,182 @@
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![GitHub stars](https://img.shields.io/github/stars/chang-zy/xiaohongshu-skill?style=flat)](https://github.com/chang-zy/xiaohongshu-skill/stargazers)
 
-面向 **Codex、Claude Code、OpenClaw 等 AI Agent** 的小红书（**RedNote / Xiaohongshu / XHS / RED / Little Red Book**）浏览器自动化 Skills。通过本机 Chrome 的真实登录会话完成笔记搜索、可核验评论采集、账号分析、图文与视频理解、内容发布、点赞、收藏和评论。
+**把小红书调研、评论区阅读和发帖准备，接进你与 Codex 的日常对话。**
 
-> 与常见的 Xiaohongshu MCP / RedNote MCP 服务不同，本项目采用 **Agent Skill + Chrome 扩展 + Python CLI** 结构，直接复用你已登录的浏览器，重点解决研究结果的完整性核验和稳定的多步骤工作流。
+这是一个以 **Codex** 为主要使用场景的小红书浏览器自动化技能。它连接本机 Chrome，复用你已登录的账号，让 Codex 搜笔记、看正文和配图、读评论与回复、研究账号，以及填写和发布图文、视频或长文。
 
-这个仓库面向需要稳定研究、核验和运营小红书内容的个人工作流。在保留上游登录、搜索、发布和互动能力的基础上，重点补齐了以下能力：
+平台也常被称为 **RedNote / Xiaohongshu / XHS / Little Red Book**。项目采用标准 `SKILL.md` 结构；其他兼容 Agent 也可接入。使用 Codex 时无需安装 OpenClaw。
 
-- **可验证的评论采集**：支持继续加载一级评论、完整展开子回复，并明确报告已加载数量、剩余项和采集完整性，避免把不完整结果误称为“全部评论”。
-- **完整的账号主页读取**：支持滚动加载并去重用户主页笔记，同时返回停止原因和完整性状态，便于账号研究与内容样本分析。
-- **图文内容理解准备**：可以按原始顺序下载笔记图片，记录下载状态与本地路径，使 Agent 能结合正文和全部配图理解内容，而不只读取封面。
-- **受确认约束的视频理解准备**：在用户明确确认后下载视频、提取关键帧与音轨，并保留时间和完整性信息，为视频内容分析提供可核验素材。
-- **基于当前会话的本地发现**：使用小红书页面自身的同城或附近筛选浏览公开账号，不读取精确地址，也不根据结果推断账号主体身份。
-- **更稳健的浏览器工作流**：增强 Bridge 自动重连、采集失败诊断、任务收尾与 Chrome 清理逻辑；自动化过程尽量不抢占用户正在使用的窗口。
+## 能帮你做什么
 
-本项目主要面向 Codex，同时保持标准 `SKILL.md` 结构，便于 Claude Code、OpenClaw 及其他兼容的 AI Agent 接入。它直接复用本机已登录的 Chrome 会话和真实账号，沿普通用户的操作路径完成小红书研究、发布与互动任务。
+| 你要完成的事 | 可以交给 Codex 的工作 | 得到什么 |
+| --- | --- | --- |
+| 选题调研 | 搜同类帖子，按点赞、收藏或时间筛选，打开正文和配图 | 带原帖出处的样本比较、选题与表达建议 |
+| 阅读评论区 | 加载一级评论、展开子回复，检查加载状态 | 读者反复问的问题、争议点、后续选题线索 |
+| 研究账号 | 读取主页、滚动加载并去重帖子 | 选题方向、更新习惯、标题和封面的样本观察 |
+| 准备一篇帖子 | 结合你的资料与调研结果，整理标题、封面思路和正文 | 可修改的内容草稿与发布素材清单 |
+| 填写与发布 | 上传本地配图或视频，填写正文，逐个选择正式话题 | 可在浏览器检查的发布页；确认后发布或保存草稿 |
+| 日常互动 | 对指定笔记点赞、收藏，发送你授权的评论或回复 | 一次明确、可检查的互动操作 |
 
-> **⚠️ 使用建议**：虽然本项目使用真实的用户浏览器和账号环境，但仍建议**控制使用频率**，避免短时间内大量操作。频繁的自动化行为可能触发小红书的风控机制，导致账号受限。
+内容判断、写作与素材解读由 Codex 完成；本仓库提供页面操作和内容获取能力。外部数据核验、绘图等工作需要 Codex 的其他工具配合。它不会提供你账号的曝光或转化后台数据，也不保证任何笔记的传播效果。
 
-## 功能概览
+## 一次实际使用：从市场研究到小红书帖子
 
-| 技能 | 说明 | 核心能力 |
-|------|------|----------|
-| **xhs-auth** | 认证管理 | 登录检查、扫码登录、手机验证码登录 |
-| **xhs-publish** | 内容发布 | 图文 / 视频 / 长文发布、定时发布、分步预览 |
-| **xhs-explore** | 内容发现 | 关键词搜索、笔记详情、用户主页、首页推荐 |
-| **xhs-interact** | 社交互动 | 评论、回复、点赞、收藏 |
-| **xhs-content-ops** | 复合运营 | 竞品分析、热点追踪、批量互动、内容创作 |
+我们用自己的市场走势研究准备了一篇帖子，工作顺序是：
 
-支持**连贯操作** — 你可以用自然语言下达复合指令，Agent 会自动串联多个技能完成任务。例如：
+1. **先搜样本**：查看同类市场观察笔记，比较点赞、收藏和内容呈现。
+2. **再读内容**：打开候选笔记的正文、配图和评论，找出读者容易理解的写法。
+3. **结合自己的资料**：整理标题、封面和正文，保留数据日期、来源与计算口径。
+4. **填入发布页**：上传本地图片，填写文案，逐个选择话题。
+5. **检查后发布**：在浏览器检查内容和话题，确认后执行发布。
 
-> "搜索刺客信条最火的图文帖子，收藏它，然后告诉我讲了什么"
+这次实际验证了搜索、详情读取、图片素材获取和发布页填写，并确认五个话题都成为正式话题。最后点击发布是独立步骤，不包含在这次验证中。
 
-Agent 会自动执行：搜索 → 筛选图文 → 按点赞排序 → 收藏 → 获取详情 → 总结内容。
+你可以直接这样说：
 
-## 安装
+> 搜一下“全球股市”相关图文笔记，挑几篇点赞和收藏较高的，读正文、配图和评论。比较它们怎么讲清楚数据，保留原帖链接，然后结合我的研究拟一篇平实的帖子。先给我看草稿。
 
-### 前置条件
+> 读这条笔记的评论和子回复，告诉我读者最常问什么。说明加载是否完整，别把少量已加载评论当成整个评论区。
 
-- Python >= 3.11
-- [uv](https://docs.astral.sh/uv/) 包管理器
-- Google Chrome 浏览器
+> 用这些本地图片和文案填写小红书发布页，添加这五个话题。每个都要选成正式话题，填好后让我检查。
 
-### 第一步：安装项目
+## 为什么适合连续调研和发帖
 
-**方法一：下载 ZIP（推荐）**
+- **评论采集有状态**：返回已加载回复数、声明回复数、剩余展开按钮等信息。`commentLoadStatus.complete` 表示已加载一级评论的子回复展开状态，不代表全站评论已被独立核验。
+- **主页样本可追踪**：滚动加载、去重并报告停止原因，分析时能说明样本范围。
+- **配图按原顺序获取**：保留本地路径和下载状态，方便 Codex 结合正文与配图阅读。视频可在明确确认后下载并提取关键帧、音轨。
+- **话题成功有检查**：选择名称准确匹配的候选项，用实际鼠标点击，并以空格结束输入；随后检查带话题 ID 的正式节点。普通 `#文字`、漏选话题或点击未生效都会报错。
+- **填写与发布可分开**：先准备发布页，再由你检查并确认，支持保存草稿。
+- **复用本机浏览器**：通过本地 Bridge 连接 Chrome，支持断线恢复、失败诊断与任务收尾。
 
-1. 在 GitHub 仓库页面点击 **Code → Download ZIP**，下载并解压到你的 Agent skills 目录：
+## 在 Codex 中安装
 
-```
-# OpenClaw 示例
-<openclaw-project>/skills/xiaohongshu-skills/
+需要 **Python 3.11+、[uv](https://docs.astral.sh/uv/)、Google Chrome**。
 
-# Claude Code 示例
-<your-project>/.claude/skills/xiaohongshu-skills/
-```
+### 1. 安装技能与依赖
 
-**方法二：Git Clone**
-
-```bash
-cd <your-agent-project>/skills/
-git clone https://github.com/chang-zy/xiaohongshu-skill.git xiaohongshu-skills
-```
-
-2. 安装 Python 依赖：
+以下使用 Codex 的用户级技能目录，供多个项目共用：
 
 ```bash
-cd xiaohongshu-skills
+mkdir -p ~/.agents/skills
+git clone https://github.com/chang-zy/xiaohongshu-skill.git ~/.agents/skills/xiaohongshu-skills
+cd ~/.agents/skills/xiaohongshu-skills
 uv sync
 ```
 
-### 第二步：安装浏览器扩展
+也可以将完整仓库放在项目的 `.agents/skills/xiaohongshu-skills/` 下。目录需要包含根 `SKILL.md`、`skills/`、`scripts/` 和 `extension/`，不要只复制一个技能文件。技能目录的说明见 [Codex 官方文档](https://developers.openai.com/codex/skills/)。
 
-扩展让 AI 能够在你的浏览器中以你的身份操作小红书，使用的是你真实的登录状态和账号信息。
+如果已经在现有 Codex 技能目录安装成功，可以沿用原路径；更新时进入原来的仓库，不要重复安装两份。
 
-1. 打开 Chrome，地址栏输入 `chrome://extensions/`
-2. 右上角开启**开发者模式**
-3. 点击**加载已解压的扩展程序**，选择本项目的 `extension/` 目录
-4. 确认扩展 **XHS Bridge** 已启用
+### 2. 加载 Chrome 扩展
 
-安装完成后即可使用 — 所有操作都发生在你自己的浏览器里，使用你的真实账号和浏览器环境。
+1. 在 Chrome 打开 `chrome://extensions/`。
+2. 开启右上角的 **开发者模式**。
+3. 点击 **加载已解压的扩展程序**，选择刚才仓库的 `extension/` 目录。
+4. 确认 **XHS Bridge** 已启用，保持 Chrome 可运行。
 
-## 使用方式
+### 3. 检查登录并开始对话
 
-### 作为 AI Agent 技能使用（推荐）
-
-安装到 skills 目录后，直接用自然语言与 Agent 对话即可。Agent 会根据你的意图自动路由到对应技能。
-
-**认证登录：**
-> "登录小红书" / "检查登录状态"
-
-**搜索浏览：**
-> "搜索关于露营的笔记" / "查看这条笔记的详情"
-
-**发布内容：**
-> "帮我发一条图文笔记，标题是…，配图是…"
-
-**社交互动：**
-> "给这条笔记点赞" / "收藏这条帖子" / "评论：写得太好了"
-
-**复合操作：**
-> "搜索竞品账号最近的爆款笔记，分析他们的选题方向"
-
-### 作为 CLI 工具使用
-
-所有功能也可以通过命令行直接调用，输出 JSON 格式，便于脚本集成。
+在仓库目录运行：
 
 ```bash
-# 检查登录状态
-python scripts/cli.py check-login
-
-# 扫码登录
-python scripts/cli.py login
-
-# 搜索笔记
-python scripts/cli.py search-feeds --keyword "关键词"
-
-# 带筛选条件
-python scripts/cli.py search-feeds \
-  --keyword "关键词" \
-  --sort-by "最多点赞" \
-  --note-type "图文"
-
-# 查看笔记详情
-python scripts/cli.py get-feed-detail \
-  --feed-id FEED_ID --xsec-token XSEC_TOKEN
-
-# 获取全部一级评论及其全部子回复；输出的 commentLoadStatus.complete
-# 为 true 时，才表示所有已加载评论的子回复已完整展开。
-python scripts/cli.py get-feed-detail \
-  --feed-id FEED_ID --xsec-token XSEC_TOKEN \
-  --load-all-comments --load-all-replies
-
-# 图文发布（分步：填写 → 预览 → 确认）
-python scripts/cli.py fill-publish \
-  --title-file title.txt \
-  --content-file content.txt \
-  --images "/abs/path/pic1.jpg" "/abs/path/pic2.jpg"
-python scripts/cli.py click-publish
-
-# 一步发布图文
-python scripts/cli.py publish \
-  --title-file title.txt \
-  --content-file content.txt \
-  --images "/abs/path/pic1.jpg" \
-  --tags "标签1" "标签2"
-
-# 视频发布
-python scripts/cli.py publish-video \
-  --title-file title.txt \
-  --content-file content.txt \
-  --video "/abs/path/video.mp4"
-
-# 点赞 / 收藏 / 评论
-python scripts/cli.py like-feed --feed-id FEED_ID --xsec-token XSEC_TOKEN
-python scripts/cli.py favorite-feed --feed-id FEED_ID --xsec-token XSEC_TOKEN
-python scripts/cli.py post-comment --feed-id FEED_ID --xsec-token XSEC_TOKEN --content "评论内容"
+uv run python scripts/cli.py check-login
 ```
 
-> 第一次运行时，若 Chrome 未打开，CLI 会在后台启动它；不会主动切换到 Chrome。
+未登录时，可在 Codex 中说“登录小红书”，按提示扫码。之后直接描述任务，根技能会路由到相应子技能。如果 Codex 没有发现新技能，重启 Codex 后再试。
 
-## CLI 命令参考
+## 更新与版本
 
-| 子命令 | 说明 |
-|--------|------|
-| `check-login` | 检查登录状态，返回用户昵称和小红书号 |
-| `login` | 获取登录二维码，等待扫码，登录后返回用户信息 |
-| `delete-cookies` | 清除 cookies（退出登录） |
-| `list-feeds` | 获取首页推荐 Feed |
-| `search-feeds` | 关键词搜索笔记（支持排序/类型/时间/范围/位置筛选） |
-| `get-feed-detail` | 获取笔记完整内容和评论 |
-| `user-profile` | 获取用户主页信息和帖子列表 |
-| `post-comment` | 对笔记发表评论 |
-| `reply-comment` | 回复指定评论 |
-| `like-feed` | 点赞 / 取消点赞 |
-| `favorite-feed` | 收藏 / 取消收藏 |
-| `publish` | 一步发布图文 |
-| `publish-video` | 一步发布视频 |
-| `fill-publish` | 填写图文表单（不发布，供预览） |
-| `fill-publish-video` | 填写视频表单（不发布，供预览） |
-| `click-publish` | 确认发布（点击发布按钮） |
-| `save-draft` | 保存为草稿 |
-| `long-article` | 长文模式：填写 + 一键排版 |
-| `select-template` | 选择长文排版模板 |
-| `next-step` | 长文下一步 + 填写描述 |
+- **main 分支**包含最近合入的修复；**[Releases](https://github.com/chang-zy/xiaohongshu-skill/releases)** 提供对应提交的打包文件，包含浏览器扩展。
+- 发布标签使用 `v版本号-提交短哈希`，例如 `v0.1.1-9496f05`。同一基础版本可能有多个构建，以提交哈希区分。
+- Git 安装可在原仓库目录执行 `git pull --ff-only`，然后 `uv sync`。若你自己修改过代码，先检查本地改动再更新。
+- 更新了 `extension/` 后，去 `chrome://extensions/` 点击 XHS Bridge 的重新加载按钮。
 
-退出码：`0` 成功 · `1` 未登录 · `2` 错误
+## 命令行示例
 
-## 项目结构
+在仓库根目录执行；统一使用 `uv run python`，避免系统 Python 缺少依赖。CLI 输出 JSON，可用于其他脚本。
 
+```bash
+# 按收藏量搜索图文样本
+uv run python scripts/cli.py search-feeds --keyword "全球股市" --sort-by "最多收藏" --note-type "图文"
+
+# 读取正文，并加载评论与子回复
+uv run python scripts/cli.py get-feed-detail --feed-id FEED_ID --xsec-token XSEC_TOKEN --load-all-comments --load-all-replies
+
+# 读取主页并滚动加载帖子
+uv run python scripts/cli.py user-profile --user-id USER_ID --xsec-token XSEC_TOKEN --load-all-notes
+
+# 填写图文发布页；标题、正文用 UTF-8 文件，文件路径使用绝对路径
+uv run python scripts/cli.py fill-publish --title-file /abs/path/title.txt --content-file /abs/path/content.txt --images /abs/path/cover.png /abs/path/chart.png --tags "市场观察" "全球股市" "数据可视化"
+
+# 检查发布页后，选择保存草稿，或在明确确认后发布
+uv run python scripts/cli.py save-draft
+# uv run python scripts/cli.py click-publish
 ```
+
+`FEED_ID` 和 `XSEC_TOKEN` 取自搜索或详情结果，不需要手工编造。一次任务收尾可使用 `cleanup`；等待发布页确认时应保留页面。
+
+### 主要命令
+
+| 类型 | 命令 |
+| --- | --- |
+| 登录 | `check-login`、`login`、`phone-login`、`delete-cookies` |
+| 调研 | `search-feeds`、`list-feeds`、`get-feed-detail`、`user-profile`、`browse-local` |
+| 图文 / 视频 | `fill-publish`、`fill-publish-video`、`publish`、`publish-video` |
+| 发布控制 | `click-publish`、`save-draft`；发布参数支持话题、定时与可见范围 |
+| 长文 | `long-article`、`select-template`、`next-step` |
+| 互动 | `post-comment`、`reply-comment`、`like-feed`、`favorite-feed` |
+| 收尾 / 诊断 | `cleanup`、`check-risk`、`diagnose-404` |
+
+用 `uv run python scripts/cli.py <命令> --help` 查看参数。退出码：`0` 成功、`1` 未登录、`2` 错误。发布、评论和回复等账号操作应基于你的明确指令。
+
+## 常见问题
+
+**话题看着有“#”，为什么没选成功？** 纯文本与正式话题是不同的编辑器节点。最新修复会准确选择候选项并检查话题 ID；人工预览时也可以确认每个话题都显示为蓝色。
+
+**提示缺少 Python 模块？** 在仓库目录执行 `uv sync`，再使用 `uv run python scripts/cli.py ...`，不要混用系统 Python。
+
+**Bridge 连接失败？** 检查 Chrome 是否运行、XHS Bridge 是否启用，以及扩展是否来自当前仓库。更新扩展后重新加载，再重试。
+
+**必须用 OpenClaw 或 Claude Code 吗？** 不需要。本 README 的安装与使用以 Codex 为主。其他 Agent 的兼容信息不改变这一点。
+
+**能保证读到所有评论吗？** 页面可能受删除、可见性、登录状态或加载限制影响。请结合返回的数量、剩余项和停止状态判断，报告中注明样本范围。
+
+## 技能与结构
+
+| 技能 | 职责 |
+| --- | --- |
+| `xhs-auth` | 登录与认证 |
+| `xhs-explore` | 搜索、详情、主页与素材读取 |
+| `xhs-publish` | 图文、视频、长文和分步发布 |
+| `xhs-interact` | 评论、回复、点赞、收藏 |
+| `xhs-content-ops` | 串联调研与内容运营流程 |
+
+```text
 xiaohongshu-skills/
-├── extension/                      # Chrome 扩展
-│   ├── manifest.json
-│   ├── background.js
-│   └── content.js
-├── scripts/                        # Python 自动化引擎
-│   ├── xhs/                        # 核心自动化包
-│   │   ├── bridge.py               # 扩展通信客户端
-│   │   ├── selectors.py            # CSS 选择器（集中管理）
-│   │   ├── login.py                # 登录 + 用户信息获取
-│   │   ├── feeds.py                # 首页 Feed
-│   │   ├── search.py               # 搜索 + 筛选
-│   │   ├── feed_detail.py          # 笔记详情 + 评论加载
-│   │   ├── user_profile.py         # 用户主页
-│   │   ├── comment.py              # 评论、回复
-│   │   ├── like_favorite.py        # 点赞、收藏
-│   │   ├── publish.py              # 图文发布
-│   │   ├── publish_video.py        # 视频发布
-│   │   ├── publish_long_article.py # 长文发布
-│   │   ├── types.py                # 数据类型
-│   │   ├── errors.py               # 异常体系
-│   │   ├── urls.py                 # URL 常量
-│   │   ├── cookies.py              # Cookie 持久化
-│   │   └── human.py                # 行为模拟
-│   ├── cli.py                      # 统一 CLI 入口
-│   ├── bridge_server.py            # 本地通信服务
-│   ├── image_downloader.py         # 媒体下载（SHA256 缓存）
-│   ├── title_utils.py              # UTF-16 标题长度计算
-│   └── run_lock.py                 # 单实例锁
-├── skills/                         # Claude Code Skills 定义
-│   ├── xhs-auth/SKILL.md
-│   ├── xhs-publish/SKILL.md
-│   ├── xhs-explore/SKILL.md
-│   ├── xhs-interact/SKILL.md
-│   └── xhs-content-ops/SKILL.md
-├── SKILL.md                        # 技能统一入口（路由到子技能）
-├── CLAUDE.md                       # 项目开发指南
-├── README_EN.md                    # English documentation
-├── pyproject.toml
-└── README.md
+├── SKILL.md              # Codex 技能入口
+├── skills/               # 各任务的子技能指引
+├── extension/            # Chrome XHS Bridge 扩展
+├── scripts/cli.py        # JSON 命令行入口
+├── scripts/xhs/          # 页面操作与内容获取
+├── tests/                # 回归测试
+├── README_EN.md          # 英文说明
+└── pyproject.toml
 ```
 
 ## 开发
 
 ```bash
-uv sync                    # 安装依赖
-uv run ruff check .        # Lint 检查
-uv run ruff format .       # 代码格式化
-uv run pytest              # 运行测试
+uv sync --extra dev
+uv run pytest
+uv run ruff check scripts/xhs/publish.py tests/test_publish_topics.py
+uv run ruff format --check scripts/xhs/publish.py tests/test_publish_topics.py
 ```
 
-## 搜索关键词与别名
+按仓库约定在分支上开发，通过 PR 合入 main。请勿提交账号 Cookie、登录信息或个人发布素材。
 
-本项目所指的平台在不同地区和社区中也常被称为：**小红书、Xiaohongshu、XHS、RedNote、RED、Little Red Book、Red Book**。常见项目类型包括 **Xiaohongshu Skill、RedNote Skill、XHS automation、RedNote automation、AI Agent Skill、browser automation**。
+## 上游与许可
 
-> “RedNote” 是目前最常见的英文品牌名；“Little Red Book” 是常见直译。`RedBook` / `Small Red Book` 也有人使用，但容易与其他产品混淆，因此仅作为补充检索词，不作为项目主名称。
+本项目基于 [autoclaw-cc/xiaohongshu-skills](https://github.com/autoclaw-cc/xiaohongshu-skills) 演进，保留原项目 MIT 许可与版权声明。感谢原作者和贡献者提供浏览器自动化基础。本仓库是独立下游版本，与原作者无隶属或维护关系。
 
-## 上游致谢
-
-本项目基于 [autoclaw-cc/xiaohongshu-skills](https://github.com/autoclaw-cc/xiaohongshu-skills) 演进，保留原项目的 MIT 许可与版权声明。感谢原作者和贡献者提供浏览器自动化基础架构。本仓库是面向个人研究工作流的独立下游版本，与原作者无隶属或维护关系。
-
-## License
-
-MIT
+[MIT License](LICENSE)

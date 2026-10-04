@@ -26,13 +26,11 @@ from .selectors import (
     ORIGINAL_SWITCH,
     ORIGINAL_SWITCH_CARD,
     POPOVER,
-    PUBLISH_BUTTON,
     SCHEDULE_SWITCH,
     TAG_FIRST_ITEM,
     TAG_TOPIC_CONTAINER,
     TITLE_INPUT,
     TITLE_MAX_SUFFIX,
-    UPLOAD_CONTENT,
     UPLOAD_INPUT,
     VISIBILITY_DROPDOWN,
     VISIBILITY_OPTIONS,
@@ -365,7 +363,8 @@ def _click_publish_tab(page: Page, tab_name: str) -> None:
 
                 // 真 tab：有 data-hp-bound + 无 hp 陷阱属性 + 在视口里
                 for (const t of tabs) {{
-                    if (t.hasAttribute('data-hp-kind') || t.hasAttribute('button-hp-installed')) continue;
+                    if (t.hasAttribute('data-hp-kind') ||
+                        t.hasAttribute('button-hp-installed')) continue;
                     if (!t.hasAttribute('data-hp-bound')) continue;
                     const title = t.querySelector('span.title');
                     if (!title || title.textContent.trim() !== name) continue;
@@ -377,7 +376,8 @@ def _click_publish_tab(page: Page, tab_name: str) -> None:
 
                 // 兜底 1：无 hp 陷阱属性 + 在视口内（兼容 XHS 未来去掉 data-hp-bound）
                 for (const t of tabs) {{
-                    if (t.hasAttribute('data-hp-kind') || t.hasAttribute('button-hp-installed')) continue;
+                    if (t.hasAttribute('data-hp-kind') ||
+                        t.hasAttribute('button-hp-installed')) continue;
                     const title = t.querySelector('span.title');
                     if (!title || title.textContent.trim() !== name) continue;
                     const r = t.getBoundingClientRect();
@@ -401,7 +401,8 @@ def _click_publish_tab(page: Page, tab_name: str) -> None:
                         // 找视口内 + 无 hp 陷阱 + active 的 tab，取它的 title
                         const tabs = document.querySelectorAll({json.dumps(CREATOR_TAB)});
                         for (const t of tabs) {{
-                            if (t.hasAttribute('data-hp-kind') || t.hasAttribute('button-hp-installed')) continue;
+                            if (t.hasAttribute('data-hp-kind') ||
+                                t.hasAttribute('button-hp-installed')) continue;
                             if (!t.classList.contains('active')) continue;
                             const r = t.getBoundingClientRect();
                             if (r.left < -1000 || r.top < -1000) continue;
@@ -642,9 +643,10 @@ def _input_tags(page: Page, content_selector: str, tags: list[str]) -> None:
 
     # 先记录当前段落数（insertParagraph 之前），之后用于精确定位正文最后一段
     # 注意：必须在 insertParagraph 之前记录，否则 para_count_before 会包含新增的 tags 行
-    para_count_before = int(page.evaluate(
-        f'document.querySelector("{content_selector}").querySelectorAll("p").length'
-    ) or 1)
+    para_count_before = int(
+        page.evaluate(f'document.querySelector("{content_selector}").querySelectorAll("p").length')
+        or 1
+    )
 
     # 用 evaluate 直接 focus 编辑器、光标移到末尾并换行一次
     # 避免 click_element 因 isTrusted=false 无法真正 focus Quill 编辑器的问题
@@ -693,6 +695,8 @@ def _input_tags(page: Page, content_selector: str, tags: list[str]) -> None:
         """
     )
     time.sleep(0.3)
+    selected = _verify_topics(page, content_selector, tags)
+    logger.info("全部正式话题已验证: %s", "、".join(selected))
 
 
 def _input_single_tag(page: Page, content_selector: str, tag: str) -> None:
@@ -714,17 +718,62 @@ def _input_single_tag(page: Page, content_selector: str, tag: str) -> None:
         if page.has_element(TAG_TOPIC_CONTAINER):
             item_selector = f"{TAG_TOPIC_CONTAINER} {TAG_FIRST_ITEM}"
             if page.has_element(item_selector):
-                page.click_element(item_selector)
+                candidates = (
+                    page.evaluate(
+                        f"Array.from(document.querySelectorAll({json.dumps(item_selector)}))"
+                        ".map(el => el.innerText)"
+                    )
+                    or []
+                )
+                index = next(
+                    (
+                        i
+                        for i, value in enumerate(candidates)
+                        if value.split("\n", 1)[0].strip().lstrip("#") == tag
+                    ),
+                    None,
+                )
+                if index is None:
+                    continue
+                page.click_nth_element(item_selector, index)
                 logger.info("点击标签联想: %s", tag)
                 clicked = True
                 break
 
     if not clicked:
-        # 没有联想，直接空格
-        logger.warning("未找到标签联想，直接输入空格: %s", tag)
-        page.type_text(" ", delay_ms=0)
+        raise PublishError(f"未找到话题联想，不能确认话题已添加: {tag}")
 
+    # 已选中的话题仍可能处于编辑态。用空格结束当前话题，再输入下一个。
+    page.type_text(" ", delay_ms=0)
     time.sleep(0.8)
+    _verify_topics(page, content_selector, [tag])
+    logger.info("正式话题已验证: %s", tag)
+
+
+def _verify_topics(page: Page, content_selector: str, tags: list[str]) -> list[str]:
+    """只接受编辑器的正式话题节点；普通 #文本不算添加成功。"""
+    selected = (
+        page.evaluate(
+            f"""
+        (() => {{
+            const editor = document.querySelector({json.dumps(content_selector)});
+            if (!editor) return [];
+            return Array.from(editor.querySelectorAll('a.tiptap-topic[data-topic]'))
+                .map(el => {{
+                    try {{
+                        const topic = JSON.parse(el.getAttribute('data-topic'));
+                        return topic.id && topic.name ? topic.name : null;
+                    }} catch (_) {{ return null; }}
+                }}).filter(Boolean);
+        }})()
+        """
+        )
+        or []
+    )
+    missing = [tag.lstrip("#") for tag in tags if tag.lstrip("#") not in selected]
+    if missing:
+        raise PublishError("话题未被正式识别: " + "、".join(missing))
+    return selected
 
 
 # ========== 定时发布 ==========
